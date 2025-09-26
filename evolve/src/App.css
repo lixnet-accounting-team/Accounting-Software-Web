@@ -1,0 +1,35 @@
+.App {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+}
+nav {
+  width: 200px;
+  background: #f4f4f4;
+  padding: 20px 0;
+  border-right: 1px solid #ddd;
+}
+nav h2 {
+  text-align: center;
+  color: #3C5E95;
+}
+nav ul {
+  list-style: none;
+  padding: 0;
+}
+nav ul li {
+  margin: 15px 0;
+}
+nav ul li a {
+  text-decoration: none;
+  color: #333;
+  padding: 5px 20px;
+  display: block;
+}
+nav ul li a:hover {
+  background: #ddd;
+}
+.content {
+  flex-grow: 1;
+  padding: 20px;
+}
