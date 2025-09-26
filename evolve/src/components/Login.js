@@ -3,7 +3,7 @@ import React from 'react';
 function Login() {
   return (
     <div className="card" id="login">
-      <h1>Evolve Finance</h1>
+      <h1>Evolve Finance💵</h1>
       <h2>Login</h2>
       <form>
         <input type="email" placeholder="Email" required />

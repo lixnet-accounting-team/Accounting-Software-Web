@@ -3,7 +3,7 @@ import React from 'react';
 function Register() {
   return (
     <div className="card" id="signup">
-      <h1>Evolve Finance</h1>
+      <h1>Evolve Finance💵</h1>
       <h2>Sign Up</h2>
       <form>
         <input type="text" placeholder="Full Name" required />
