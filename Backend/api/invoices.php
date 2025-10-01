@@ -1,6 +1,8 @@
 <?php
 // invoices.php
-require 'db.php';
+// require 'db.php';
+require_once __DIR__ . '/../db.php';
+
 
 $action = $_GET['action'] ?? 'list';
 
