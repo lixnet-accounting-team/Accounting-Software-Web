@@ -1,71 +1,96 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 function Dashboard() {
+  const [userData, setUserData] = useState({ totalIncomeThisMonth: 0, totalExpensesThisMonth: 0, name: '' });
+  const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
+  const location = useLocation();
+  const userEmail = location.state?.email || localStorage.getItem('userEmail'); // Assuming email is passed or stored
+
+  useEffect(() => {
+    if (!userEmail) {
+      navigate('/login'); // Redirect if no user is logged in
+      return;
+    }
+
+    // Fetch user-specific data from backend
+    axios.get(`http://localhost:5000/api/user-data?email=${userEmail}`)
+      .then(response => {
+        setUserData({
+          totalIncomeThisMonth: response.data.totalIncomeThisMonth || 0,
+          totalExpensesThisMonth: response.data.totalExpensesThisMonth || 0,
+          name: response.data.name || 'User'
+        });
+        setLoading(false);
+      })
+      .catch(error => {
+        console.error('Error fetching user data:', error);
+        setLoading(false);
+      });
+  }, [userEmail, navigate]);
+
+  const profitLoss = userData.totalIncomeThisMonth - userData.totalExpensesThisMonth;
+
+  if (loading) return <div>Loading...</div>;
+
   return (
     <div className="dashboard-container">
       <nav className="sidebar">
         <ul>
           <li><a href="/">Dashboard</a></li>
-          <li><a href="/payroll-wallet">Payroll Wallet</a></li>
-          <li><a href="/employees">Employees</a></li>
-          <li><a href="/payroll">Payroll</a></li>
-          <li><a href="/attendance">Attendance</a></li>
-          <li><a href="/leave-management">Leave Management</a></li>
-          <li><a href="/reports">Reports</a></li>
-          <li><a href="/help-support">Help & Support</a></li>
+          <li><a href="/customer-management">Customer Management</a></li>
+          <li><a href="/basic-invoicing">Basic Invoicing</a></li>
+          <li><a href="/simple-expense-tracking">Simple Expense Tracking</a></li>
+          <li><a href="/basic-reporting">Basic Reporting</a></li>
         </ul>
       </nav>
       <div className="main-content">
         <div className="header">
-          <h1>Payroll Dashboard</h1>
-          <div className="user-info">John Mwangi <span>HR Manager</span></div>
+          <h1>Dashboard</h1>
+          <div className="user-info">{userData.name} <span>Business Manager</span></div>
         </div>
         <div className="stats">
-          <div className="stat-item">Total Employees: 42</div>
-          <div className="stat-item">Wallet Balance: KSh 1,245,680</div>
-          <div className="stat-item">This Month's Payroll: KSh 1,000,360</div>
-          <div className="stat-item">Pending Actions: 5</div>
+          <div className="stat-item">Total Income This Month: KSh {userData.totalIncomeThisMonth.toLocaleString()}</div>
+          <div className="stat-item">Total Expenses This Month: KSh {userData.totalExpensesThisMonth.toLocaleString()}</div>
+          <div className="stat-item">Profit/Loss: KSh {profitLoss.toLocaleString()}</div>
         </div>
         <div className="wallet-section">
           <div className="wallet-card">
-            <h2>Payroll Wallet Balance</h2>
-            <div className="wallet-amount">KSh 1,245,680</div>
-            <p>Last Updated: Today, 06:43 AM</p>
+            <h2>Business Overview for {userData.name}</h2>
+            <div className="wallet-amount">Net Profit: KSh {profitLoss.toLocaleString()}</div>
+            <p>Last Updated: Today, 04:09 PM</p>
             <div className="wallet-options">
-              <button>Mobile Money</button>
-              <button>Bank Transfer</button>
-              <button>Transaction History</button>
+              <button>View Details</button>
             </div>
             <div className="recent-transactions">
-              <h3>Recent Transactions</h3>
+              <h3>Key Metrics</h3>
               <ul>
-                <li>Wallet Top-up <span>+ KSh 1,000,000</span> Today, 06:43 AM</li>
-                <li>Salary Disbursement <span>- KSh 254,360</span> Yesterday, 03:30 PM</li>
-                <li>Wallet Top-up <span>+ KSh 500,000</span> Mar 15, 2023</li>
+                <li>Cash Flow <span>KSh {profitLoss.toLocaleString()}</span></li>
+                <li>Revenue <span>KSh {userData.totalIncomeThisMonth.toLocaleString()}</span></li>
+                <li>Expenses <span>KSh {userData.totalExpensesThisMonth.toLocaleString()}</span></li>
               </ul>
             </div>
-            <button className="fund-wallet">+ Fund Wallet</button>
           </div>
         </div>
         <div className="payroll-processing">
-          <h3>Payroll Processing</h3>
-          <p>Next payroll run: 28th February 2023</p>
-          <button>Run Payroll</button>
+          <h3>Sales & Invoicing</h3>
+          <p>Manage your open invoices and payments</p>
+          <button>Go to Invoicing</button>
         </div>
         <div className="recent-activity">
-          <h3>Recent Activity</h3>
+          <h3>Expenses & Vendors</h3>
           <ul>
-            <li>Wallet Funded</li>
+            <li>Track your expenses by category</li>
           </ul>
         </div>
         <div className="payroll-summary">
-          <h3>This Month's Payroll Summary</h3>
+          <h3>Profit & Loss</h3>
           <div className="summary-details">
-            <p>Basic Salary: KSh 890,000</p>
-            <p>Allowances: KSh 125,000</p>
-            <p>Overtime: KSh 45,130</p>
-            <p>Deductions (NSSF, NHIF, NSSF): KSh 142,030</p>
-            <p>Net Pay: KSh 1,000,360</p>
+            <p>Income: KSh {userData.totalIncomeThisMonth.toLocaleString()}</p>
+            <p>Expenses: KSh {userData.totalExpensesThisMonth.toLocaleString()}</p>
+            <p>Profit/Loss: KSh {profitLoss.toLocaleString()}</p>
           </div>
         </div>
       </div>
@@ -186,19 +211,6 @@ function Dashboard() {
         }
         .recent-transactions ul li span {
           float: right;
-        }
-        .fund-wallet {
-          background: #28a745;
-          color: white;
-          border: none;
-          padding: 10px;
-          border-radius: 5px;
-          cursor: pointer;
-          width: 100%;
-          margin-top: 10px;
-        }
-        .fund-wallet:hover {
-          background: #218838;
         }
         .payroll-processing, .recent-activity, .payroll-summary {
           margin-bottom: 20px;
