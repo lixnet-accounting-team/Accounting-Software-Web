@@ -22,8 +22,6 @@ function App() {
             <li><a href="/">Dashboard</a></li>
             <li><a href="/login">Login</a></li>
             <li><a href="/register">Register</a></li>
-            <li><a href="/customers/add">Add Customer</a></li>
-            <li><a href="/customers">Customer List</a></li>
             <li><a href="/expenses/add">Add Expense</a></li>
             <li><a href="/expenses">Expense List</a></li>
             <li><a href="/invoices/add">Add Invoice</a></li>
@@ -36,13 +34,13 @@ function App() {
             <Route path="/" element={<Dashboard />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
-            <Route path="/customers/add" element={<CustomerForm />} />
-            <Route path="/customers" element={<CustomerList />} />
             <Route path="/expenses/add" element={<ExpenseForm />} />
-            <Route path="/expenses" element={<ExpenseList />} />
             <Route path="/invoices/add" element={<InvoiceForm />} />
             <Route path="/invoices" element={<InvoiceList />} />
             <Route path="/report" element={<Report />} />
+            <Route path="/add-customer" element={<CustomerForm />} />
+            <Route path="/customer-list" element={<CustomerList />} />
+            <Route path="/expenses" element={<ExpenseList />} />
           </Routes>
         </div>
       </div>

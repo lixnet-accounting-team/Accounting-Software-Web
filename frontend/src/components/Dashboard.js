@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 
 function Dashboard() {
   const [userData, setUserData] = useState({ totalIncomeThisMonth: 0, totalExpensesThisMonth: 0, name: '' });
@@ -39,11 +39,23 @@ function Dashboard() {
     <div className="dashboard-container">
       <nav className="sidebar">
         <ul>
-          <li><a href="/">Dashboard</a></li>
-          <li><a href="/customer-management">Customer Management</a></li>
-          <li><a href="/basic-invoicing">Basic Invoicing</a></li>
-          <li><a href="/simple-expense-tracking">Simple Expense Tracking</a></li>
-          <li><a href="/basic-reporting">Basic Reporting</a></li>
+          <li><Link to="/">Dashboard</Link></li>
+          <li>
+            <Link to="/customer-management">Customer Management</Link>
+            <ul className="sub-menu">
+              <li><Link to="/add-customer">Add Customer</Link></li>
+              <li><Link to="/customer-list">Customer List</Link></li>
+            </ul>
+          </li>
+          <li>
+            <Link to="/basic-invoicing">Basic Invoicing</Link>
+              <ul className="sub-menu">
+              <li><Link to="/add-invoice">Add Invoice</Link></li>
+              <li><Link to="/invoice-list">Invoice List</Link></li>
+            </ul>
+            </li>
+          <li><Link to="/simple-expense-tracking">Simple Expense Tracking</Link></li>
+          <li><Link to="/basic-reporting">Basic Reporting</Link></li>
         </ul>
       </nav>
       <div className="main-content">
@@ -60,7 +72,7 @@ function Dashboard() {
           <div className="wallet-card">
             <h2>Business Overview for {userData.name}</h2>
             <div className="wallet-amount">Net Profit: KSh {profitLoss.toLocaleString()}</div>
-            <p>Last Updated: Today, 04:09 PM</p>
+            <p>Last Updated: Today, 11:25 PM</p>
             <div className="wallet-options">
               <button>View Details</button>
             </div>
@@ -112,6 +124,7 @@ function Dashboard() {
         }
         .sidebar ul li {
           margin: 15px 0;
+          position: relative;
         }
         .sidebar ul li a {
           text-decoration: none;
@@ -121,6 +134,25 @@ function Dashboard() {
         }
         .sidebar ul li a:hover {
           background: #ddd;
+        }
+        .sub-menu {
+          display: none;
+          position: absolute;
+          left: 100%;
+          top: 0;
+          background: #f4f4f4;
+          min-width: 150px;
+          padding: 0;
+          border: 1px solid #ddd;
+        }
+        .sidebar ul li:hover .sub-menu {
+          display: block;
+        }
+        .sub-menu li {
+          margin: 0;
+        }
+        .sub-menu li a {
+          padding: 5px 10px;
         }
         .main-content {
           flex-grow: 1;

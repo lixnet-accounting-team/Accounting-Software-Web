@@ -36,6 +36,8 @@ db.getConnection((err, connection) => {
   }
 });
 
+
+
 // Existing GET /api/customers
 app.get('/api/customers', (req, res) => {
   db.query('SELECT * FROM customers', (err, results) => {
@@ -69,7 +71,7 @@ app.post('/api/register', (req, res) => {
   );
 });
 
-// New POST /api/login for user authentication
+// Existing POST /api/login for user authentication
 app.post('/api/login', (req, res) => {
   const { email, password } = req.body;
   if (!email || !password) {
@@ -88,7 +90,19 @@ app.post('/api/login', (req, res) => {
   );
 });
 
+// GET /api/expenses with month filter
+app.get('/api/expenses', (req, res) => {
+  const { month } = req.query; // e.g., "2025-10"
+  const query = month
+    ? 'SELECT * FROM expenses WHERE DATE_FORMAT(date, "%Y-%m") = ?'
+    : 'SELECT * FROM expenses';
+  db.query(query, month ? [month] : [], (err, results) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json(results);
+  });
+});
 
+// GET /api/user-data
 app.get('/api/user-data', (req, res) => {
   const { email } = req.query;
   if (!email) return res.status(400).json({ error: 'Email is required' });
@@ -107,6 +121,67 @@ app.get('/api/user-data', (req, res) => {
   );
 });
 
+// GET /api/latest-invoice
+let lastInvoiceNumber = 0; // In-memory counter
+app.get('/api/latest-invoice', (req, res) => {
+  db.query('SELECT MAX(id) as maxId FROM invoices', (err, results) => {
+    if (err) return res.status(500).json({ error: err.message });
+    const maxId = results[0].maxId || 0;
+    lastInvoiceNumber = maxId;
+    res.json({ lastInvoiceNumber });
+  });
+});
+
+// POST /api/invoices with auto-incremented invoice number
+app.post('/api/invoices', (req, res) => {
+  const { date, customerId, total, items } = req.body; // Match InvoiceForm.js
+  if (!date || !customerId || items.some(item => !item.description || !item.amount)) {
+    return res.status(400).json({ error: 'All required fields must be filled' });
+  }
+
+  // Auto-increment invoice number
+  lastInvoiceNumber += 1;
+  const invoiceNumber = `INV-${String(lastInvoiceNumber).padStart(4, '0')}`;
+  const totalAmount = items.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+
+  db.query(
+    'INSERT INTO invoices (invoice_number, date, customer_id, total, items) VALUES (?, ?, ?, ?, ?)',
+    [invoiceNumber, date, customerId, totalAmount, JSON.stringify(items)],
+    (err, result) => {
+      if (err) return res.status(500).json({ error: err.message });
+      res.json({ id: result.insertId, invoice_number: invoiceNumber, message: 'Invoice created' });
+    }
+  );
+});
+
+// GET /api/invoices to display all invoices
+app.get('/api/invoices', (req, res) => {
+  db.query('SELECT * FROM invoices', (err, results) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json(results);
+  });
+});
+
+//hmm
+app.post('/api/invoices', (req, res) => {
+  const { date, customerId, total, items } = req.body;
+  if (!date || !customerId || items.some(item => !item.description || !item.amount)) {
+    return res.status(400).json({ error: 'All required fields must be filled' });
+  }
+
+  lastInvoiceNumber += 1;
+  const invoiceNumber = `INV-${String(lastInvoiceNumber).padStart(4, '0')}`;
+  const totalAmount = items.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+
+  db.query(
+    'INSERT INTO invoices (invoice_number, date, customer_id, total, items) VALUES (?, ?, ?, ?, ?)',
+    [invoiceNumber, date, customerId, totalAmount, JSON.stringify(items)],
+    (err, result) => {
+      if (err) return res.status(500).json({ error: err.message });
+      res.json({ id: result.insertId, invoice_number: invoiceNumber, message: 'Invoice created' });
+    }
+  );
+});
 
 app.listen(PORT, () => {
   console.log(`Backend server running on http://localhost:${PORT}`);
