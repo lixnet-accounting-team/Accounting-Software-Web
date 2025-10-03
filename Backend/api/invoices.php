@@ -1,25 +1,24 @@
 <?php
-// invoices.php
-// require 'db.php';
-require_once __DIR__ . '/../db.php';
+// backend/api/invoices.php
+require_once __DIR__ . "/helpers.php";
+require_once __DIR__ . "/utils.php";
 
+// Authenticate first (like customers.php does)
+$user = requireAuth();
+$pdo = getDb();
 
-$action = $_GET['action'] ?? 'list';
+// Handle request method
+$method = $_SERVER['REQUEST_METHOD'];
+$action = $_GET['action'] ?? null;
 
-switch ($action) {
-
-    // ---------------- CREATE INVOICE ----------------
-    case 'create':
-        header('Content-Type: application/json');
+switch($method) {
+    
+    // ---------------- CREATE INVOICE (POST) ----------------
+    case 'POST':
         $input = json_decode(file_get_contents('php://input'), true);
-        if (!$input) {
-            $input = $_POST;
-        }
-
+        
         if (empty($input['items']) || !is_array($input['items'])) {
-            http_response_code(400);
-            echo json_encode(['error' => 'No items provided']);
-            exit;
+            jsonResponse(['error' => 'No items provided'], 400);
         }
 
         $customer = $input['customer'] ?? [];
@@ -36,7 +35,7 @@ switch ($action) {
             if ($customer_email !== '') {
                 $stmt = $pdo->prepare("SELECT id FROM customers WHERE email = ? LIMIT 1");
                 $stmt->execute([$customer_email]);
-                $row = $stmt->fetch();
+                $row = $stmt->fetch(PDO::FETCH_ASSOC);
                 if ($row) {
                     $customer_id = $row['id'];
                 }
@@ -91,7 +90,7 @@ switch ($action) {
 
             $pdo->commit();
 
-            echo json_encode([
+            jsonResponse([
                 'success' => true,
                 'invoice_id' => (int)$invoice_id,
                 'invoice_number' => $invoice_number,
@@ -100,154 +99,101 @@ switch ($action) {
 
         } catch (Exception $e) {
             $pdo->rollBack();
-            http_response_code(500);
-            echo json_encode(['error' => 'Failed to create invoice', 'message' => $e->getMessage()]);
+            jsonResponse(['error' => 'Failed to create invoice', 'message' => $e->getMessage()], 500);
         }
         break;
 
-    // ---------------- LIST INVOICES ----------------
-    case 'list':
-        $fmt = $_GET['format'] ?? 'html';
-        $stmt = $pdo->query("
-          SELECT i.id, i.invoice_number, i.date, i.total, c.name as customer_name
-          FROM invoices i
-          JOIN customers c ON c.id = i.customer_id
-          ORDER BY i.created_at DESC
-          LIMIT 200
-        ");
-        $invoices = $stmt->fetchAll();
+    // ---------------- LIST INVOICES (GET) ----------------
+    case 'GET':
+        // View single invoice by ID
+        if (isset($_GET['id'])) {
+            $id = intval($_GET['id']);
+            
+            $stmt = $pdo->prepare("
+                SELECT i.*, 
+                       c.name as customer_name, 
+                       c.email as customer_email, 
+                       c.phone as customer_phone, 
+                       c.address as customer_address
+                FROM invoices i 
+                JOIN customers c ON c.id = i.customer_id 
+                WHERE i.id = ?
+            ");
+            $stmt->execute([$id]);
+            $invoice = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            if (!$invoice) {
+                jsonResponse(['error' => 'Invoice not found'], 404);
+            }
 
-        if ($fmt === 'json' || strpos($_SERVER['HTTP_ACCEPT'] ?? '', 'application/json') !== false) {
-            header('Content-Type: application/json');
-            echo json_encode($invoices);
-            exit;
+            // Get invoice items
+            $stmt = $pdo->prepare("SELECT * FROM invoice_items WHERE invoice_id = ?");
+            $stmt->execute([$id]);
+            $invoice['items'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            jsonResponse($invoice);
+        } 
+        // List all invoices
+        else {
+            $stmt = $pdo->query("
+                SELECT i.id, i.invoice_number, i.date, i.due_date, i.total, i.created_at,
+                       c.name as customer_name, c.email as customer_email
+                FROM invoices i
+                JOIN customers c ON c.id = i.customer_id
+                ORDER BY i.created_at DESC
+                LIMIT 200
+            ");
+            $invoices = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            jsonResponse($invoices);
         }
-
-        // HTML output
-        ?>
-        <!doctype html>
-        <html>
-        <head><meta charset="utf-8"><title>Invoice list</title>
-        <style>
-        body{font-family:system-ui, Arial; padding:20px}
-        table{border-collapse:collapse; width:100%}
-        td,th{border:1px solid #ddd; padding:8px}
-        th{background:#f2f2f2}
-        a{color:blue}
-        </style>
-        </head>
-        <body>
-        <h1>Invoices</h1>
-        <table>
-          <thead><tr><th>Invoice #</th><th>Date</th><th>Customer</th><th>Total</th><th>View</th></tr></thead>
-          <tbody>
-            <?php foreach($invoices as $inv): ?>
-              <tr>
-                <td><?=htmlspecialchars($inv['invoice_number'])?></td>
-                <td><?=htmlspecialchars($inv['date'])?></td>
-                <td><?=htmlspecialchars($inv['customer_name'])?></td>
-                <td><?=number_format($inv['total'],2)?></td>
-                <td><a href="?action=view&id=<?=urlencode($inv['id'])?>" target="_blank">View</a></td>
-              </tr>
-            <?php endforeach; ?>
-          </tbody>
-        </table>
-        </body>
-        </html>
-        <?php
         break;
 
-    // ---------------- VIEW INVOICE ----------------
-    case 'view':
-        $id = isset($_GET['id']) ? intval($_GET['id']) : 0;
-        if (!$id) {
-            echo "Missing id";
-            exit;
+    // ---------------- UPDATE INVOICE (PUT) ----------------
+    case 'PUT':
+        if (!isset($_GET['id'])) {
+            jsonResponse(['error' => 'Invoice ID is required'], 400);
         }
 
-        $stmt = $pdo->prepare("SELECT i.*, c.name as customer_name, c.email as customer_email, c.phone as customer_phone, c.address as customer_address
-                               FROM invoices i JOIN customers c ON c.id = i.customer_id WHERE i.id = ?");
-        $stmt->execute([$id]);
-        $invoice = $stmt->fetch();
-        if (!$invoice) {
-            echo "Invoice not found";
-            exit;
+        $id = intval($_GET['id']);
+        $data = json_decode(file_get_contents("php://input"), true);
+        
+        if (!$data) {
+            jsonResponse(['error' => 'No data provided'], 400);
         }
 
-        $stmt = $pdo->prepare("SELECT * FROM invoice_items WHERE invoice_id = ?");
-        $stmt->execute([$id]);
-        $items = $stmt->fetchAll();
-        ?>
-        <!doctype html>
-        <html>
-        <head>
-        <meta charset="utf-8">
-        <title><?=htmlspecialchars($invoice['invoice_number'])?></title>
-        <style>
-        body{font-family:system-ui,Arial; max-width:800px; margin:0 auto; padding:20px}
-        .header{display:flex; justify-content:space-between; align-items:flex-start}
-        h1{margin:0}
-        .table{width:100%; border-collapse:collapse; margin-top:20px}
-        .table th, .table td{border:1px solid #ddd; padding:8px}
-        .total-row td{font-weight:bold}
-        .right{text-align:right}
-        .small{font-size:0.9em; color:#666}
-        .print-btn{margin-top:15px}
-        @media print {
-          .print-btn { display:none }
+        $fields = [];
+        $values = [];
+        
+        foreach(['date', 'due_date', 'notes'] as $field) {
+            if (isset($data[$field])) {
+                $fields[] = "$field = ?";
+                $values[] = $data[$field];
+            }
         }
-        </style>
-        </head>
-        <body>
-        <div class="header">
-          <div>
-            <h1>My Company</h1>
-            <div class="small">Address line 1<br>Phone: 000-000-000</div>
-          </div>
-          <div>
-            <strong>Invoice</strong><br>
-            <?=htmlspecialchars($invoice['invoice_number'])?><br>
-            Date: <?=htmlspecialchars($invoice['date'])?><br>
-            Due: <?=htmlspecialchars($invoice['due_date'])?>
-          </div>
-        </div>
 
-        <hr>
-        <div>
-          <strong>Bill to:</strong><br>
-          <?=htmlspecialchars($invoice['customer_name'])?><br>
-          <?=nl2br(htmlspecialchars($invoice['customer_address']))?><br>
-          <?=htmlspecialchars($invoice['customer_email'])?><br>
-          <?=htmlspecialchars($invoice['customer_phone'])?>
-        </div>
+        if (empty($fields)) {
+            jsonResponse(['error' => 'No valid fields to update'], 400);
+        }
 
-        <table class="table">
-          <thead><tr><th>Description</th><th class="right">Qty</th><th class="right">Unit</th><th class="right">Total</th></tr></thead>
-          <tbody>
-            <?php foreach($items as $it): ?>
-              <tr>
-                <td><?=htmlspecialchars($it['description'])?></td>
-                <td class="right"><?=intval($it['quantity'])?></td>
-                <td class="right"><?=number_format($it['unit_price'],2)?></td>
-                <td class="right"><?=number_format($it['total'],2)?></td>
-              </tr>
-            <?php endforeach; ?>
-            <tr class="total-row"><td colspan="3" class="right">Subtotal</td><td class="right"><?=number_format($invoice['subtotal'],2)?></td></tr>
-            <tr class="total-row"><td colspan="3" class="right">Tax</td><td class="right"><?=number_format($invoice['tax'],2)?></td></tr>
-            <tr class="total-row"><td colspan="3" class="right">Total</td><td class="right"><?=number_format($invoice['total'],2)?></td></tr>
-          </tbody>
-        </table>
+        $values[] = $id;
+        $stmt = $pdo->prepare("UPDATE invoices SET " . implode(", ", $fields) . " WHERE id = ?");
+        $stmt->execute($values);
 
-        <?php if (!empty($invoice['notes'])): ?>
-          <p><strong>Notes:</strong><br><?=nl2br(htmlspecialchars($invoice['notes']))?></p>
-        <?php endif; ?>
+        jsonResponse(['success' => true, 'message' => 'Invoice updated successfully']);
+        break;
 
-        <button class="print-btn" onclick="window.print()">Print / Save PDF</button>
-        </body>
-        </html>
-        <?php
+    // ---------------- DELETE INVOICE (DELETE) ----------------
+    case 'DELETE':
+        if (!isset($_GET['id'])) {
+            jsonResponse(['error' => 'Invoice ID is required'], 400);
+        }
+
+        $stmt = $pdo->prepare("DELETE FROM invoices WHERE id = ?");
+        $stmt->execute([intval($_GET['id'])]);
+
+        jsonResponse(['success' => true, 'message' => 'Invoice deleted successfully']);
         break;
 
     default:
-        echo "Invalid action";
+        jsonResponse(['error' => 'Method not allowed'], 405);
 }
