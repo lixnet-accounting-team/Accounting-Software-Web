@@ -1,10 +1,13 @@
-function Home() {
+// src/HomeContent.js
+import React from "react";
+
+function HomeContent() {
   return (
-    <div className="container mt-5">
-      <h1>Accounting Software</h1>
-      <p>Welcome to our app 🚀</p>
+    <div className="dashboard">
+      <h1>Dashboard</h1>
+      <p>Welcome to Accounting Software 🚀</p>
     </div>
   );
 }
 
-export default Home;
+export default HomeContent;
