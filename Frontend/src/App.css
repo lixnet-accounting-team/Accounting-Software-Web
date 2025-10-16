@@ -17,3 +17,30 @@ h1 {
 p {
     color: #333;
 }
+
+/* ---------------------------------------------------------------------
+  Sticky header / Reports fix
+  - Keeps main content from creating stacking/scrolling contexts that break
+    position: sticky.
+  - Ensures the reports header (inside Reports component) sits above other
+    elements so it doesn't get visually clipped/covered.
+  - This is minimal and safe: it only overrides overflow/transform on
+    .main-content and boosts .reports-header z-index.
+  --------------------------------------------------------------------- */
+
+.main-content {
+    /* allow sticky children to behave relative to page scroll */
+    overflow: visible !important;
+    /* avoid transforms that create stacking contexts affecting sticky */
+    transform: none !important;
+    /* keep layout predictable for children */
+    position: relative;
+}
+
+/* If in some layout the reports header is still under other elements,
+   this makes the reports header take precedence. */
+.reports-header {
+    position: sticky;
+    top: 0;
+    z-index: 99999 !important;
+}

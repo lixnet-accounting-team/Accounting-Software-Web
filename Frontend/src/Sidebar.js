@@ -1,11 +1,31 @@
 import React, { useState } from "react";
 import "./Sidebar.css";
-import { FaBars, FaUser, FaMoneyBill, FaFileInvoice, FaChartBar, FaSignOutAlt, FaHome } from "react-icons/fa";
+import {
+  FaBars,
+  FaUser,
+  FaMoneyBill,
+  FaFileInvoice,
+  FaChartBar,
+  FaSignOutAlt,
+  FaHome,
+} from "react-icons/fa";
+import { useNavigate } from "react-router-dom";
 
 function Sidebar({ onSelectPage }) {
   const [isOpen, setIsOpen] = useState(false);
+  const navigate = useNavigate();
 
   const toggleSidebar = () => setIsOpen(!isOpen);
+
+  const handleLogout = () => {
+    // Clear any stored authentication data
+    localStorage.removeItem("authToken");
+    localStorage.removeItem("user");
+    sessionStorage.clear();
+
+    // Redirect to login page
+    navigate("/login");
+  };
 
   return (
     <div className={`sidebar ${isOpen ? "open" : ""}`}>
@@ -35,7 +55,7 @@ function Sidebar({ onSelectPage }) {
           <FaChartBar className="icon" />
           {isOpen && <span>Reports</span>}
         </li>
-        <li onClick={() => onSelectPage("logout")}>
+        <li onClick={handleLogout}>
           <FaSignOutAlt className="icon" />
           {isOpen && <span>Logout</span>}
         </li>

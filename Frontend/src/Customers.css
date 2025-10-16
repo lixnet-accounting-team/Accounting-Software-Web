@@ -157,6 +157,7 @@
 .modal button[type="submit"] {
     background-color: #1976d2;
     color: #fff;
+    margin: 2px;
 }
 
 .modal button[type="submit"]:hover {
@@ -166,6 +167,7 @@
 .modal button[type="button"] {
     background-color: #e53935;
     color: #fff;
+    margin: 2px;
 }
 
 .modal button[type="button"]:hover {

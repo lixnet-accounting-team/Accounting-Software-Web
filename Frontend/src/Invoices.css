@@ -226,6 +226,7 @@
     border-radius: 6px;
     border: none;
     cursor: pointer;
+    margin: 2px;
 }
 
 .modal-save-btn:hover {
