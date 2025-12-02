@@ -1,0 +1,75 @@
+/* index.css (updated)
+   - Removed global body flex-centering so sticky headers and normal page scroll
+     behave correctly.
+   - Kept auth styles; added .auth-wrapper to restore full-screen centering when needed.
+*/
+
+body {
+    font-family: system-ui, sans-serif;
+    background-color: #f5f8ff;
+    margin: 0;
+    /* removed display:flex / align-items:center / height:100vh which interfered
+       with sticky positioning and created a non-standard scroll container */
+}
+
+/* Optional: use this wrapper on your login/auth page to vertically center the auth box
+   Example:
+     <div class="auth-wrapper">
+       <div class="auth-container"> ... </div>
+     </div>
+*/
+.auth-wrapper {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
+
+/* Auth container styling (kept intact, horizontally centered by default) */
+.auth-container {
+    background: white;
+    padding: 40px;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    width: 350px;
+    text-align: center;
+    margin: 40px auto;
+    /* keeps it centered horizontally when not using .auth-wrapper */
+}
+
+.auth-form {
+    display: flex;
+    flex-direction: column;
+}
+
+.auth-form input {
+    margin: 10px 0;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+}
+
+.auth-form button {
+    margin-top: 10px;
+    padding: 10px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+.auth-form button:hover {
+    background-color: #0056b3;
+}
+
+.auth-form a {
+    color: #007bff;
+    text-decoration: none;
+}
+
+.error {
+    color: red;
+    margin-top: 10px;
+}
